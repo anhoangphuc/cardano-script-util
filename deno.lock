@@ -61,5 +61,16 @@
     "https://deno.land/x/lucid@0.10.1/src/utils/mod.ts": "7e405bfa0db96d9e995e67fb77251e8465843addf141caf4ce64b3efa6077822",
     "https://deno.land/x/lucid@0.10.1/src/utils/utils.ts": "2539c15e6241e636d94caadb0b2ffdf0e7d5bf76198783240d8c7a8306880be9",
     "https://deno.land/x/typebox@0.25.13/src/typebox.ts": "9b20b62c0bf31f1a9128b6dc6dfd470a5d956a48f0b0ef0a1ccc4d794fb55dcc"
+  },
+  "npm": {
+    "specifiers": {
+      "tweetnacl": "tweetnacl@1.0.3"
+    },
+    "packages": {
+      "tweetnacl@1.0.3": {
+        "integrity": "sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==",
+        "dependencies": {}
+      }
+    }
   }
 }
