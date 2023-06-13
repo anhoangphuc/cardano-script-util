@@ -5,14 +5,8 @@ import {
 import { Buffer } from "https://deno.land/std@0.139.0/node/buffer.ts";
 import "https://deno.land/x/dotenv@v3.2.2/load.ts";
 import { AccountInfo } from "./types.ts";
-import  NaCl from "npm:tweetnacl"
+import NaCl from "npm:tweetnacl"
 
-const blockfrostKey = Deno.env.get("BLOCKFROST_KEY");
-
-const lucid = await Lucid.new(
-    new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", blockfrostKey),
-    "Preprod",
-)
 
 const host = Deno.env.get("API_HOST");
 const port = Deno.env.get("API_PORT");
@@ -178,20 +172,21 @@ function buildOperations(adaCoins: any, fromAccount: string, toAccount: string) 
 
 async function signAPayload(payload: any, privKey: string, pubKey: string) {
     console.log(`signPayload`);
+    console.log(privKey);
     console.log(payload);
-    const priv = C.PrivateKey.from_bytes(Buffer.from(privKey, 'hex')).to_bech32();
-    lucid.selectWalletFromPrivateKey(priv);
-    const address = await lucid.wallet.address();
-    const signatures = await lucid.wallet.signMessage(address, payload.hex_bytes);
-    console.log(JSON.stringify(signatures));
     return {
         signing_payload: payload[0],
         public_key: {
             hex_bytes: Buffer.from(pubKey, 'hex').toString("hex"),
             curve_type: "edwards25519",
-          },
-          signature_type: "ed25519",
-          hex_bytes: signatures.signature,
+        },
+        signature_type: "ed25519",
+        hex_bytes: Buffer.from(
+            NaCl.sign.detached(
+                Buffer.from(payload[0].hex_bytes, "hex"),
+                Buffer.from(privKey, 'hex'),
+            )
+        ).toString("hex"),
     }
 }
 
@@ -217,8 +212,8 @@ export async function constructCombine(unsignedTransaction: any, payloadSignatur
 }
 
 export async function prepareTransfer(fromAccount: string, toAccount: string, amount: string): Promise<string> {
-    const from: AccountInfo = JSON.parse(await Deno.readTextFile(`./data/accounts/${fromAccount}.info`));
-    const to: AccountInfo = JSON.parse(await Deno.readTextFile(`./data/accounts/${toAccount}.info`));
+    const from: AccountInfo = JSON.parse(await Deno.readTextFile(`./data/accounts_2/${fromAccount}.info`));
+    const to: AccountInfo = JSON.parse(await Deno.readTextFile(`./data/accounts_2/${toAccount}.info`));
     console.log(from.address);
     const adaCoins = await fetchAdaCoins(from.address);
     const operations = buildOperations(adaCoins, from.address, to.address);
