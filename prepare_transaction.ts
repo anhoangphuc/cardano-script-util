@@ -39,9 +39,15 @@ async function fetchPreprocess(operations: any) {
             "blockchain": "cardano",
             "network": "preprod"
         },
-        "operations": ${JSON.stringify(operations)}
+        "operations": ${JSON.stringify(operations, null, 4)},
+        "metadata": {
+            "relative_ttl": 1000,
+            "deposit_parameters": {
+                "keyDeposit": "2000000",
+                "poolDeposit": "500000000"
+            }
+        }
     }`;
-    console.log(body);
     const response = await fetch(`http://${host}:${port}/construction/preprocess`, {
         method: 'POST',
         headers: {
@@ -60,7 +66,6 @@ async function fetchMetadata(options: any) {
         },
         "options": ${JSON.stringify(options)}
     }`;
-    console.log(body);
     const response = await fetch(`http://${host}:${port}/construction/metadata`, {
         method: 'POST',
         headers: {
@@ -77,7 +82,7 @@ async function fetchPayloads(operations: any, metadata: any) {
             "blockchain": "cardano",
             "network": "preprod"
         },
-        "operations": ${JSON.stringify(operations)},
+        "operations": ${JSON.stringify(operations, null, 4)},
         "metadata": ${JSON.stringify(metadata)}
     }`;
     const response = await fetch(`http://${host}:${port}/construction/payloads`, {
@@ -94,7 +99,6 @@ async function fetchPayloads(operations: any, metadata: any) {
 function buildOperations(adaCoins: any, fromAccount: string, toAccount: string) {
     const totalBalance = adaCoins.map((adaCoin: any) => BigInt(adaCoin.amount.value))
         .reduce((x: bigint, y: bigint) => x + y, 0n);
-    console.log(totalBalance);
     const inputOperations = adaCoins.map((adaCoin: any, index: number) => {
         return {
             operation_identifier: {
@@ -113,7 +117,8 @@ function buildOperations(adaCoins: any, fromAccount: string, toAccount: string) 
                 currency: {
                     symbol: "ADA",
                     decimals: 6
-                }
+                },
+                metadata: {},
             },
             coin_change: {
                 coin_identifier: adaCoin.coin_identifier,
@@ -140,7 +145,8 @@ function buildOperations(adaCoins: any, fromAccount: string, toAccount: string) 
                 currency: {
                     symbol: "ADA",
                     decimals: 6
-                }
+                },
+                metadata: {}
             },
             metadata: {},
         },
@@ -161,7 +167,8 @@ function buildOperations(adaCoins: any, fromAccount: string, toAccount: string) 
                 currency: {
                     symbol: "ADA",
                     decimals: 6
-                }
+                },
+                metadata: {},
             },
             metadata: {},
         }
@@ -171,9 +178,6 @@ function buildOperations(adaCoins: any, fromAccount: string, toAccount: string) 
 }
 
 async function signAPayload(payload: any, privKey: string, pubKey: string) {
-    console.log(`signPayload`);
-    console.log(privKey);
-    console.log(payload);
     return {
         signing_payload: payload[0],
         public_key: {
@@ -199,8 +203,6 @@ export async function constructCombine(unsignedTransaction: any, payloadSignatur
         "unsigned_transaction": ${JSON.stringify(unsignedTransaction)},
         "signatures": ${JSON.stringify([payloadSignatures])}
     }`;
-    console.log(`body combine`);
-    console.log(body);
     const response = await fetch(`http://${host}:${port}/construction/combine`, {
         method: 'POST',
         headers: {
@@ -211,29 +213,23 @@ export async function constructCombine(unsignedTransaction: any, payloadSignatur
     return (await response.json());
 }
 
-export async function prepareTransfer(fromAccount: string, toAccount: string, amount: string): Promise<string> {
+export async function prepareTransfer(fromAccount: string, toAccount: string): Promise<string> {
     const from: AccountInfo = JSON.parse(await Deno.readTextFile(`./data/accounts_2/${fromAccount}.info`));
     const to: AccountInfo = JSON.parse(await Deno.readTextFile(`./data/accounts_2/${toAccount}.info`));
-    console.log(from.address);
     const adaCoins = await fetchAdaCoins(from.address);
     const operations = buildOperations(adaCoins, from.address, to.address);
-    console.log(operations);
     const preprocess = await fetchPreprocess(operations);
-    console.log(preprocess);
     const metadata = await fetchMetadata(preprocess);
-    console.log(metadata);
     const payloads = await fetchPayloads(operations, metadata);
-    console.log(`payloads`);
-    console.log(payloads);
     const signedPayloads = await signAPayload(payloads.payloads, from.privKey, from.pubKey);
-    console.log(`signedPayloads`);
-    console.log(signedPayloads);
     const combined = await constructCombine(payloads.unsigned_transaction, signedPayloads);
-    console.log(`combined is `);
-    console.log(JSON.stringify(combined));
-    return "1";
+    return combined.signed_transaction;
 }
 
 if (import.meta.main) {
-    await prepareTransfer("account_2", "account_2", "3");
+    for (let i = 0; i < 99; i++) {
+        const j = (i + 1) % 99;
+        const signedTransaction = await prepareTransfer(`account_${i}`, `account_${j}`);
+        console.log({ i, j, signedTransaction });
+    }
 }
