@@ -35,8 +35,9 @@ export async function generateAndFundAccount(accountName: string): Promise<Accou
 }
 
 if (import.meta.main) {
-    const numberOfAccount = Number(Deno.args[0]);
-    for (let i=0; i<numberOfAccount; i++) {
+    const fromAccount = Number(Deno.args[0]);
+    const toAccount = Number(Deno.args[1]);
+    for (let i=fromAccount; i<toAccount; i++) {
         await generateAndFundAccount(`account_${i}`);
     }
 }
