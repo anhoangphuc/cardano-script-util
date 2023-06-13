@@ -1,5 +1,5 @@
 import {
-    Lucid, Blockfrost, fromText, Data, C,
+    Lucid, Blockfrost, C,
 } from "https://deno.land/x/lucid@0.10.1/mod.ts";
 
 import { Buffer } from "https://deno.land/std@0.139.0/node/buffer.ts";
