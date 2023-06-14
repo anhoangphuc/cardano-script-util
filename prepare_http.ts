@@ -59,6 +59,27 @@ async function fetchPreprocess(operations: any) {
     return (await response.json()).options;
 }
 
+export async function constructionSubmit(signed_transaction: string): Promise<string> {
+    const body = `{
+         "network_identifier": {
+            "blockchain": "cardano",
+            "network": "preprod"
+        },
+        "signed_transaction": "${signed_transaction}"
+    }`;
+    console.log(body);
+    console.log(`Start calling`);
+    const response = await fetch(`http://${host}:${port}/construction/submit`, {
+        method: 'POST',
+        headers: {
+            "Content-Type": 'application/json'
+        },
+        body,
+    });
+    console.log(`response is ${response}`);
+    return (await response.json());
+}
+
 async function fetchMetadata(options: any) {
     const body = `{
          "network_identifier": {

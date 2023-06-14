@@ -6,6 +6,7 @@ import { Buffer } from "https://deno.land/std@0.139.0/node/buffer.ts";
 import "https://deno.land/x/dotenv@v3.2.2/load.ts";
 import { AccountInfo } from "./types.ts";
 import NaCl from "npm:tweetnacl"
+import { constructionSubmit } from "./prepare_http.ts";
 
 
 const host = Deno.env.get("API_HOST");
@@ -227,9 +228,20 @@ export async function prepareTransfer(fromAccount: string, toAccount: string): P
 }
 
 if (import.meta.main) {
+    const signedTransactions = [];
     for (let i = 0; i < 99; i++) {
         const j = (i + 1) % 99;
         const signedTransaction = await prepareTransfer(`account_${i}`, `account_${j}`);
+        signedTransactions.push(signedTransaction);
         console.log({ i, j, signedTransaction });
     }
+    // const txHashes = await Promise.all(signedTransactions.map(async (transaction, index) => {
+    //     if (index > 1) return "";
+    //     const txHash = await constructionSubmit(transaction);
+    //     console.log(`Submit transaction at ${index} success with txHash ${txHash}`);
+    //     return txHash;
+    // }))
+    // console.log(txHashes);
+    const txHash = await constructionSubmit(signedTransactions[0]);
+    console.log(txHash);
 }
