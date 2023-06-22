@@ -69,7 +69,7 @@ export async function constructionSubmit(signed_transaction: string): Promise<st
     }`;
     console.log(body);
     console.log(`Start calling`);
-    const response = await fetch(`http://${host}:${port}/construction/submit`, {
+    const response = await fetch(`http://localhost:8085/construction/submit`, {
         method: 'POST',
         headers: {
             "Content-Type": 'application/json'
@@ -97,6 +97,27 @@ async function fetchMetadata(options: any) {
         body,
     });
     return (await response.json()).metadata;
+}
+
+export async function fetchMempoolTxDetail(txHash: string) {
+    const body = `{
+         "network_identifier": {
+            "blockchain": "cardano",
+            "network": "preprod"
+        },
+        "transaction_identifier": {
+            "hash": "${txHash}"
+        }
+    }`;
+    console.log(body);
+    const response = await fetch(`http://${host}:${port}/mempool/transaction`, {
+        method: 'POST',
+        headers: {
+            "Content-Type": 'application/json'
+        },
+        body,
+    });
+    return (await response.json());
 }
 
 async function fetchPayloads(operations: any, metadata: any) {

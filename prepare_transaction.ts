@@ -6,7 +6,7 @@ import { Buffer } from "https://deno.land/std@0.139.0/node/buffer.ts";
 import "https://deno.land/x/dotenv@v3.2.2/load.ts";
 import { AccountInfo } from "./types.ts";
 import NaCl from "npm:tweetnacl"
-import { constructionSubmit } from "./prepare_http.ts";
+import { constructionSubmit, fetchMempoolTxDetail } from "./prepare_http.ts";
 
 
 const host = Deno.env.get("API_HOST");
@@ -56,6 +56,7 @@ async function fetchPreprocess(operations: any) {
         },
         body,
     });
+    console.log(`response data`);
     return (await response.json()).options;
 }
 
@@ -142,7 +143,7 @@ function buildOperations(adaCoins: any, fromAccount: string, toAccount: string) 
                 metadata: {},
             },
             amount: {
-                value: `50000000`,
+                value: `1000000`,
                 currency: {
                     symbol: "ADA",
                     decimals: 6
@@ -164,7 +165,7 @@ function buildOperations(adaCoins: any, fromAccount: string, toAccount: string) 
                 metadata: {},
             },
             amount: {
-                value: (totalBalance - 50000000n - 3000000n).toString(),
+                value: (totalBalance - 1000000n - 1000000n).toString(),
                 currency: {
                     symbol: "ADA",
                     decimals: 6
@@ -219,29 +220,36 @@ export async function prepareTransfer(fromAccount: string, toAccount: string): P
     const to: AccountInfo = JSON.parse(await Deno.readTextFile(`./data/accounts_2/${toAccount}.info`));
     const adaCoins = await fetchAdaCoins(from.address);
     const operations = buildOperations(adaCoins, from.address, to.address);
+    console.log(`operations is `);
+    console.log(operations);
     const preprocess = await fetchPreprocess(operations);
+    console.log(`preprocess is `);
+    console.log(preprocess);
     const metadata = await fetchMetadata(preprocess);
+    console.log(`metadata is `);
+    console.log(metadata);
     const payloads = await fetchPayloads(operations, metadata);
+    console.log(`payloads is`);
+    console.log(payloads);
     const signedPayloads = await signAPayload(payloads.payloads, from.privKey, from.pubKey);
     const combined = await constructCombine(payloads.unsigned_transaction, signedPayloads);
     return combined.signed_transaction;
 }
 
 if (import.meta.main) {
-    const signedTransactions = [];
-    for (let i = 0; i < 99; i++) {
+    const signedTransactions: string[] = [];
+    for (let i = 12; i < 13; i++) {
         const j = (i + 1) % 99;
+        console.log(`prepare transfer ${i} - ${j}`);
         const signedTransaction = await prepareTransfer(`account_${i}`, `account_${j}`);
         signedTransactions.push(signedTransaction);
-        console.log({ i, j, signedTransaction });
+        console.log(`submit tx`, { i, j, signedTransaction });
+        console.log(signedTransaction);
+        const txHash = await constructionSubmit(signedTransaction);
+        console.log(`fetch tx detail ${JSON.stringify(txHash)} in mempool`)
+        console.log(txHash);
+        // const txDetail = await fetchMempoolTxDetail((txHash as any).transaction_identifier.hash);
+        console.log(`tx detail for ${(txHash as any).transaction_identifier.hash}`);
+        // console.log(JSON.stringify(txDetail));
     }
-    // const txHashes = await Promise.all(signedTransactions.map(async (transaction, index) => {
-    //     if (index > 1) return "";
-    //     const txHash = await constructionSubmit(transaction);
-    //     console.log(`Submit transaction at ${index} success with txHash ${txHash}`);
-    //     return txHash;
-    // }))
-    // console.log(txHashes);
-    const txHash = await constructionSubmit(signedTransactions[0]);
-    console.log(txHash);
 }
